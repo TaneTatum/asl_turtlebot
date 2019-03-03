@@ -52,24 +52,21 @@ class PoseController:
         self.y_g = 0.0
         self.theta_g = 0.0
 
-        
+
 
         # time last pose command was received
         self.cmd_pose_time = rospy.get_rostime()
         # if using gazebo, then subscribe to model states
         if use_gazebo:
             rospy.Subscriber('/gazebo/model_states', ModelStates, self.gazebo_callback)
- 
+
         self.trans_listener = tf.TransformListener()
 
 
         ######### YOUR CODE HERE ############
         # create a subscriber that receives Pose2D messages and
         # calls cmd_pose_callback. It should subscribe to '/cmd_pose'
-
-
-
-
+        rospy.Subscriber('/cmd_pose', Pose2D, self.cmd_pose_callback)
         ######### END OF YOUR CODE ##########
 
 
@@ -92,8 +89,9 @@ class PoseController:
         ######### YOUR CODE HERE ############
         # fill out cmd_pose_callback
 
-
-
+        self.x_g = data.x
+        self.y_g = data.y
+        self.theta_g = data.theta
 
         ######### END OF YOUR CODE ##########
         self.cmd_pose_time = rospy.get_rostime()
@@ -119,10 +117,33 @@ class PoseController:
             # robot's state is self.x, self.y, self.theta
             # robot's desired state is self.x_g, self.y_g, self.theta_g
             # fill out cmd_x_dot = ... cmd_theta_dot = ...
+            x = self.x
+            y = self.y
+            th = self.theta
+            xg = self.x_g
+            yg = self.y_g
+            thg = self.theta_g
 
+            rho = ((xg-x)**2+(yg-y)**2)**0.5
+            m = np.arctan2((yg-y),(xg-x)) #angle between rho vector and x-axis
+            al = wrapToPi(m-th)
+            dl = wrapToPi(m-thg)
 
+            k1 = 1
+            k2 = 1
+            k3 = 1
 
+            #control input
+            V = k1*rho*np.cos(al)
+            w = k2*al+k1*np.sinc(al/np.pi)*np.cos(al)*(al+k3*dl)
 
+            V_max = 0.5
+            om_max = 1
+            V = min(abs(V),V_max)*np.sign(V)     #saturate V
+            om = min(abs(w),om_max)*np.sign(w) #saturate om
+
+            cmd_x_dot = V
+            cmd_theta_dot = om
 
             ######### END OF YOUR CODE ##########
 

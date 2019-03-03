@@ -141,9 +141,16 @@ class Detector:
 
         ### YOUR CODE HERE ###
 
-        x = 1 # CHANGE ME
-        y = 0 # CHANGE ME
-        z = 0 # CHANGE ME
+        # Unnormalized corrdinates
+        Xc = (u - self.cx) / self.fx
+        Yc = (v - self.cy) / self.fy
+        Zc = 1
+
+        # Normalize
+        mag = (Xc**2 + Yc**2 + Zc**2)**0.5
+        x = Xc/mag
+        y = Yc/mag
+        z = Zc/mag
 
         ### END OF YOUR CODE ###
 
@@ -241,10 +248,10 @@ class Detector:
 
         ### YOUR CODE HERE ###
 
-        self.cx = 0 # CHANGE ME
-        self.cy = 0 # CHANGE ME
-        self.fx = 1 # CHANGE ME
-        self.fy = 1 # CHANGE ME
+        self.cx = msg.K[2]
+        self.cy = msg.K[5]
+        self.fx = msg.K[0]
+        self.fy = msg.K[4]
 
         ### END OF YOUR CODE ###
 

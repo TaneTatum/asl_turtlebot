@@ -34,14 +34,39 @@ class Controller:
         self.theta = euler[2]
 
     def get_ctrl_output(self):
-        # use self.x self.y and self.theta to 
+        # use self.x self.y and self.theta to
 	# compute the right control input here
-	
+
 	### YOUR CODE HERE ###
+        x = self.x
+        y = self.y
+        th = self.theta
+	xg = 3
+	yg = 3
+	thg = -np.pi/2
+        
+        rho = ((xg-x)**2+(yg-y)**2)**0.5
+        m = np.arctan2((yg-y),(xg-x)) #angle between rho vector and x-axis
+        al = wrapToPi(m-th)
+        dl = wrapToPi(m-thg)
 
+        k1 = 1
+        k2 = 1
+        k3 = 1
 
+        #control input
+        V = k1*rho*np.cos(al)
+        w = k2*al+k1*np.sinc(al/np.pi)*np.cos(al)*(al+k3*dl)
 
-	### END OF YOUR CODE ###        
+        V_max = 0.5
+        om_max = 1
+        V = min(abs(V),V_max)*np.sign(V)     #saturate V
+        om = min(abs(w),om_max)*np.sign(w) #saturate om
+        #ctrl = np.array([V,om])
+
+        cmd_x_dot = V
+        cmd_theta_dot = om
+	### END OF YOUR CODE ###
 
         cmd = Twist()
         cmd.linear.x = cmd_x_dot

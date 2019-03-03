@@ -75,7 +75,7 @@ class Supervisor:
         # if using rviz, we can subscribe to nav goal click
         if rviz:
             rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.rviz_goal_callback)
-        
+
     def gazebo_callback(self, msg):
         pose = msg.pose[msg.name.index("turtlebot3_burger")]
         twist = msg.twist[msg.name.index("turtlebot3_burger")]
@@ -94,7 +94,7 @@ class Supervisor:
         origin_frame = "/map" if mapping else "/odom"
         print("rviz command received!")
         try:
-            
+
             nav_pose_origin = self.trans_listener.transformPose(origin_frame, msg)
             self.x_g = nav_pose_origin.pose.position.x
             self.y_g = nav_pose_origin.pose.position.y
@@ -128,7 +128,7 @@ class Supervisor:
 
 
     ############ your code starts here ############
-    # feel free to change the code here 
+    # feel free to change the code here
     # you may or may not find these functions useful
     # there is no "one answer"
 
@@ -229,11 +229,20 @@ class Supervisor:
 
         elif self.mode == Mode.STOP:
             # at a stop sign
-            self.nav_to_pose()
+            #self.nav_to_pose()
+            self.stay_idle()
+
+            # If finished stopping, switch mode to cross
+            if self.has_stopped():
+                self.init_crossing()
 
         elif self.mode == Mode.CROSS:
             # crossing an intersection
             self.nav_to_pose()
+
+            if self.has_crossed():
+                self.mode = Mode.NAV
+                
 
         elif self.mode == Mode.NAV:
             if self.close_to(self.x_g,self.y_g,self.theta_g):
