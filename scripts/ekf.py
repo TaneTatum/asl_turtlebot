@@ -232,6 +232,40 @@ class SLAM_EKF(EKF):
         # Gu = np.zeros((self.x.size, 2))
         ##############
 
+        m = self.x[3:]      # Map
+        N = m.shape[0]/2    # Number of map features
+        w = om              # Rename variable
+
+        # If w is large
+        if np.absolute(w) > 0.001:
+            g = np.array([x + v/w*(sin(w*dt + th) - sin(th)),
+                y - v/w*(cos(w*dt + th) - cos(th)),
+                th + w*dt])
+            Gx = np.array([[1, 0, v/w*(cos(w*dt+th)-cos(th))],
+                [0.0, 1.0, v/w*(sin(w*dt+th)-sin(th))],
+                [0.0, 0.0, 1.0]])
+            Gu = np.array([[1/w*(sin(w*dt + th)-sin(th)), v/(w**2)*(w*dt*cos(w*dt + th)-sin(w*dt + th)+sin(th))],
+                [-1/w*(cos(w*dt + th)-cos(th)), v/(w**2)*(w*dt*sin(w*dt + th)+cos(w*dt + th)-cos(th))],
+                [0.0, dt]])
+
+
+        # If w is small
+        else:
+            g = np.array([x + dt*v*cos(th),
+                y + dt*v*sin(th),
+                th])
+            Gx = np.array([[1, 0, -dt*v*sin(th)],
+                [0.0, 1.0, dt*v*cos(th)],
+                [0.0, 0.0, 1.0]])
+            Gu = np.array([[dt*cos(th), v*(w*dt*cos(w*dt + th)-sin(w*dt + th)+sin(th))],
+                [dt*sin(th),v*(w*dt*sin(w*dt + th)+cos(w*dt + th)-cos(th))],
+                [0.0, dt]])
+
+        #Append map values
+        g = np.hstack([g,m])    # Append map to end of state
+        Gx = scipy.linalg.block_diag(Gx,np.eye(N*2))    # Append map jacobian
+        Gu = np.vstack([Gu, np.zeros([N*2,2])])
+
         return g, Gx, Gu
 
     # Combined Turtlebot + map measurement model
@@ -252,6 +286,10 @@ class SLAM_EKF(EKF):
         # compute z, R, H (should be identical to Localization_EKF.measurement_model above)
         ##############
 
+        z = np.array([np.hstack(v_list)]).T
+        R = scipy.linalg.block_diag(*R_list)
+        H = np.vstack(H_list)
+
         return z, R, H
 
     # Adapt this method from Localization_EKF.map_line_to_predicted_measurement.
@@ -264,14 +302,25 @@ class SLAM_EKF(EKF):
         #### TODO ####
         # compute h, Hx (you may find the skeleton for computing Hx below useful)
 
+        x, y, th = self.x[:3]   # Coordinates of base frame in world frame
+        xc, yc, thc = self.tf_base_to_camera # Corrdinates of camera in base frame
+        # Coordinates of camera in world frame
+        x_ = x + xc*cos(th) - yc*sin(th)
+        y_ = y + xc*sin(th) + yc*cos(th)
+        th_ = th+thc
+
+        # Eq. 5.94
+        h = np.array([alpha - (th_), r-(x_*cos(alpha) + y_*sin(alpha))])
+
         Hx = np.zeros((2,self.x.size))
-        Hx[:,:3] = FILLMEIN
+        Hx[:,:3] = np.array([[0, 0, -1],
+            [-cos(alpha), -sin(alpha), yc*cos(alpha-th_+thc)-xc*sin(alpha-th_+thc)]])
         # First two map lines are assumed fixed so we don't want to propagate any measurement correction to them
         if j > 1:
-            Hx[0, 3+2*j] = FILLMEIN
-            Hx[1, 3+2*j] = FILLMEIN
-            Hx[0, 3+2*j+1] = FILLMEIN
-            Hx[1, 3+2*j+1] = FILLMEIN
+            Hx[0, 3+2*j] = 1
+            Hx[1, 3+2*j] = x_*sin(alpha) - y_*cos(alpha)
+            Hx[0, 3+2*j+1] = 0
+            Hx[1, 3+2*j+1] = 1
 
         ##############
 
@@ -287,5 +336,40 @@ class SLAM_EKF(EKF):
         #### TODO ####
         # compute v_list, R_list, H_list
         ##############
+
+        v_list = []
+        R_list = []
+        H_list = []
+
+        # Extract map featuers
+        m = self.x[3:]      # Map vector
+        N = m.shape[0]/2    # Number of features
+        m = m.reshape([N,2]).T
+
+        # Convert world map to expected measurements
+        h = np.empty([2,0])
+        Hx = []
+        for j in range(m.shape[1]):
+            h_, Hx_ = self.map_line_to_predicted_measurement(j)
+            h = np.hstack([h,np.array([h_]).T])
+            Hx.append(Hx_)
+
+        # Associate measurement with expected measurement
+        I = rawZ.shape[1] # Total number of measuremenets
+        for i in range(I):
+            v = np.array([rawZ[:,i]]).T - h  # innovation
+            d = np.empty([1,0])
+            # Claculate Mahalanobis distance for each map feature
+            for j in range(v.shape[1]):
+                S = np.matmul(Hx[j], np.matmul(self.P, Hx[j].T)) + rawR[i]
+                vj = np.array([v[:,j]]).T
+                d_ = np.matmul(vj.T, np.matmul(np.linalg.inv(S), vj))
+                d = np.hstack([d, d_])
+            #Check if distance is within threshold
+            if np.amin(d) < self.g**2:
+                idx = np.argmin(d)      # Index of smallest d
+                v_list.append(v[:,idx]) # Add new innovation to v_list
+                R_list.append(rawR[i])
+                H_list.append(Hx[idx])
 
         return v_list, R_list, H_list
