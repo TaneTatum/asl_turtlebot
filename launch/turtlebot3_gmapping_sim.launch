@@ -6,7 +6,7 @@
   <arg name="gui" default="false"/> 
 
 
-<!-- FILL ROSPARAMS HERE -->
+<!-- FILL ROSPARAMS HERE --> 
   <rosparam param="sim">false<!-- FILL YOUR PARAM IN HERE --></rosparam>
   <rosparam param="map">true<!-- FILL YOUR PARAM IN HERE --></rosparam>
   <!-- tf here means tensorflow for object detection -->
