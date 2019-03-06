@@ -68,6 +68,8 @@
   <node pkg="asl_turtlebot" type="pose_controller.py" name="turtlebot_pose_controller" />
   <node pkg="asl_turtlebot" type="gazebo_plot.py" name="gazebo_plot" />
 
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find asl_turtlebot)/rviz/signs_gmapping.rviz"/>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find asl_turtlebot)/rviz/rviz_config_1.rviz"/>
+
+  <node pkg="asl_turtlebot" type="turtlebot_marker.py" name="turtlebot_marker" />
   
 </launch>
