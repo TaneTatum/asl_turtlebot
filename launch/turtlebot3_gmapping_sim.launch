@@ -70,6 +70,8 @@
 
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find asl_turtlebot)/rviz/rviz_config_1.rviz"/>
 
+  <!-- Launch Visualization Marker Nodes --> 
   <node pkg="asl_turtlebot" type="turtlebot_marker.py" name="turtlebot_marker" />
+  <node pkg="asl_turtlebot" type="goal_marker.py" name="goal_marker" />
   
 </launch>
