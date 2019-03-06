@@ -49,6 +49,7 @@ add_message_files(
  FILES
  DetectedObject.msg
  DetectedObjectList.msg
+ ObjectList.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -103,7 +104,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES asl_turtlebot
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+	CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
 )
 
