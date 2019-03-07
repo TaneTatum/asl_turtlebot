@@ -21,8 +21,13 @@ class Object_List:
 		#Initialize Variables
 		self.x = None
 		self.y = None
-		self.th = None
+		self.theta = None
 		self.trans_listener = tf.TransformListener()
+		self.objectName = objectName
+		self.xList = []
+		self.yList = []
+		self.thetaList = []
+	
 
 		# if using gazebo, we have access to perfect state
 		if use_gazebo:
@@ -33,12 +38,6 @@ class Object_List:
 		#Object list publisher
 		self.object_list_publisher = rospy.Publisher('object_list', ObjectList, queue_size=10)
 
-
-		self.objectList = ObjectList()
-		self.objectList.name = objectName
-		self.objectList.x = []
-		self.objectList.y = []
-		self.objectList.th = []
 
 	# Not used if not using gazebo
 	def gazebo_callback(self, msg):
@@ -58,42 +57,37 @@ class Object_List:
 	def object_detected_callback(self, msg):
 		""" callback for when the detector has found an object."""
 
-		distance_threshold = 10
+		dist_threshold = 0.25
+		
+		print 'Object Found'
 
-		print('Object found')
-		# Get current robot location
+		#Get current position
 		x = self.x
 		y = self.y
-		th = self.th
+		theta = self.theta
 
-		# If list is empty
-		print self.objectList.x
-		if self.objectList.x == []:
-			print 'empty'
-			# Add location to list
-			self.objectList.name = 'stop_sign'
-			self.objectList.x.append(x)
-			self.objectList.y.append(y)
-			self.objectList.th.append(th)
-			# Publish new list
-			self.object_list_publisher.publish(self.objectList)
-
+		N = len(self.xList)
+		if N == 0:
+			self.xList = [x]
+			self.yList = [y]
+			self.thetaList = [theta]
 		else:
-			# Check distance to other objects in list
-			N = len(self.objectList.x)	#Number of items in list
 			dists = []
 			for i in range(N):
-				dist = ((x-self.objectList.x[i])**2 - (y-self.objectList.y[i])**2)**0.5
+				dist = ((x-self.xList[i])**2 + (y-self.yList[i])**2)**0.5
 				dists.append(dist)
-			# Check if closer than threshold to other objects in list
-			if min(dists) < distance_threshold:
-				# Add location to list
-				self.objectList.x.append(x)
-				self.objectList.y.append(y)
-				self.objectList.th.append(th)
-				# Publish new list
-				self.object_list_publisher.publish(self.objectList)
+			if min(dists) > dist_threshold:
+				self.xList.append(x)
+				self.yList.append(y)
+				self.thetaList.append(theta)
 
+		obList = ObjectList()
+		obList.name = self.objectName
+		obList.x = self.xList
+		obList.y = self.yList
+		obList.th = self.thetaList
+
+		self.object_list_publisher.publish(obList)
 
 
 
