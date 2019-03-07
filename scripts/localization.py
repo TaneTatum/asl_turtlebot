@@ -82,9 +82,12 @@ class LocalizationVisualizer:
 
     def scan_callback(self, msg):
         if self.EKF:
+            N = len(msg.ranges)
+            ######## ADDED ARTIFICAL NOISE ################
+            noise = np.random.normal(0,0.2,N)
             self.scans.append((msg.header.stamp,
                                np.array([i*msg.angle_increment + msg.angle_min for i in range(len(msg.ranges))]),
-                               np.array(msg.ranges)))
+                               np.array(msg.ranges)+noise))
 
     def control_callback(self, msg):
         if self.EKF:
