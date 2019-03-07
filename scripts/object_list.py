@@ -57,9 +57,7 @@ class Object_List:
 	def object_detected_callback(self, msg):
 		""" callback for when the detector has found an object."""
 
-		dist_threshold = 0.25
-		
-		print 'Object Found'
+		dist_threshold = 0.75
 
 		#Get current position
 		x = self.x
