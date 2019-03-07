@@ -26,6 +26,7 @@ class Object_Marker:
     def object_list_callback(self,msg):
         name = msg.name
 
+        #Stop Sign Marker
         if name == 'stop_sign':
             N = len(msg.x)
             for i in range(N):
@@ -45,6 +46,28 @@ class Object_Marker:
                     scale=Vector3(0.05, 0.05, 1.0),
                     header=Header(frame_id='map'),
                     color=ColorRGBA(1.0, 0.0, 0.0, 1.0))
+                self.marker_publisher.publish(marker)
+
+        #Bottle Marker
+        elif name == 'bottle':
+            N = len(msg.x)
+            for i in range(N):
+                x = msg.x[i]
+                y = msg.y[i]
+                th = msg.th[i]
+                # Put marker ahead of robot
+                dist = 0.5
+                x = x + dist*np.cos(th)
+                y = y + dist*np.sin(th)
+
+                marker = Marker(
+                    type=Marker.CYLINDER,
+                    id=i+10,
+                    lifetime=rospy.Duration(0),
+                    pose=Pose(Point(x, y, 0.0), Quaternion(0, 0, 0, 1)),
+                    scale=Vector3(0.25, 0.25, 0.5),
+                    header=Header(frame_id='map'),
+                    color=ColorRGBA(0.0, 0.0, 1.0, 1.0))
                 self.marker_publisher.publish(marker)
 
     def loop(self):

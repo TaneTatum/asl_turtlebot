@@ -32,8 +32,8 @@ class Object_List:
 		# if using gazebo, we have access to perfect state
 		if use_gazebo:
 			rospy.Subscriber('/gazebo/model_states', ModelStates, self.gazebo_callback)
-		# stop sign detector
-		rospy.Subscriber('/detector/stop_sign', DetectedObject, self.object_detected_callback)
+		# Object detector
+		rospy.Subscriber('/detector/'+objectName, DetectedObject, self.object_detected_callback)
 
 		#Object list publisher
 		self.object_list_publisher = rospy.Publisher('object_list', ObjectList, queue_size=10)
@@ -111,4 +111,9 @@ class Object_List:
 
 if __name__ == '__main__':
 	stopSignList = Object_List('stop_sign')
-	stopSignList.run()
+	bottleList = Object_List('bottle')
+	rate = rospy.Rate(10) # 10 Hz
+	while not rospy.is_shutdown():
+		stopSignList.loop()
+		bottleList.loop()
+		rate.sleep()
