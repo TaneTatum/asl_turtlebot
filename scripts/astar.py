@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import rospy
 
 # Represents a motion planning problem to be solved using A*
 class AStar(object):
@@ -77,9 +76,10 @@ class AStar(object):
         neighbors = []
         directions = [[-1,1],[0,1],[1,1],[-1,0],[1,0],[-1,-1],[0,-1],[1,-1]]	# Possible directions to travel
         for opt in directions:
-        	x_new = tuple([sum(i) for i in zip(x,opt)])
-        	x_grid = self.snap_to_grid(x_new)
-        	if self.is_free(x_grid):
+            opt = [dir*self.resolution for dir in opt]
+            x_new = tuple([sum(i) for i in zip(x,opt)])
+            x_grid = self.snap_to_grid(x_new)
+            if self.is_free(x_grid):
         		neighbors.append(x_grid)
         return neighbors
 
@@ -132,6 +132,7 @@ class AStar(object):
     def solve(self):
         while len(self.open_set) > 0:
             open_set_f = dict((k,self.f_score[k]) for k in self.open_set)	# F-score of elements in open_set
+            #print open_set_f
             x_current = min(open_set_f, key=open_set_f.get)		#Alg line 6
             if x_current == self.x_goal:
             	self.path = self.reconstruct_path()
@@ -149,6 +150,9 @@ class AStar(object):
             	self.came_from[x_neigh] = x_current
             	self.g_score[x_neigh] = tent_g
             	self.f_score[x_neigh] = tent_g + self.distance(self.x_goal,x_neigh)	# Alg line 24
+        # print 'f_score', self.f_score
+        # print 'g_score', self.g_score
+        # print 'closed_set', self.closed_set
         return False
 
 # A 2D state space grid with a set of rectangular obstacles. The grid is fully deterministic
@@ -179,34 +183,34 @@ class DetOccupancyGrid2D(object):
             obs[1][0]-obs[0][0],
             obs[1][1]-obs[0][1],))
 
-# ### TESTING
+### TESTING
 
-# # A simple example
-# width = 10
-# height = 10
-# x_init = (0,0)
-# x_goal = (8,8)
-# obstacles = [((6,6),(8,7)),((2,1),(4,2)),((2,4),(4,6)),((6,2),(8,4))]
+# A simple example
+width = 10
+height = 10
+x_init = (0,0)
+x_goal = (8,8)
+obstacles = [((6,6),(8,7)),((2,1),(4,2)),((2,4),(4,6)),((6,2),(8,4))]
+occupancy = DetOccupancyGrid2D(width, height, obstacles)
+
+# A large random example
+# width = 101
+# height = 101
+# num_obs = 15
+# min_size = 5
+# max_size = 25
+# obs_corners_x = np.random.randint(0,width,num_obs)
+# obs_corners_y = np.random.randint(0,height,num_obs)
+# obs_lower_corners = np.vstack([obs_corners_x,obs_corners_y]).T
+# obs_sizes = np.random.randint(min_size,max_size,(num_obs,2))
+# obs_upper_corners = obs_lower_corners + obs_sizes
+# obstacles = zip(obs_lower_corners,obs_upper_corners)
 # occupancy = DetOccupancyGrid2D(width, height, obstacles)
-
-# # A large random example
-# # width = 101
-# # height = 101
-# # num_obs = 15
-# # min_size = 5
-# # max_size = 25
-# # obs_corners_x = np.random.randint(0,width,num_obs)
-# # obs_corners_y = np.random.randint(0,height,num_obs)
-# # obs_lower_corners = np.vstack([obs_corners_x,obs_corners_y]).T
-# # obs_sizes = np.random.randint(min_size,max_size,(num_obs,2))
-# # obs_upper_corners = obs_lower_corners + obs_sizes
-# # obstacles = zip(obs_lower_corners,obs_upper_corners)
-# # occupancy = DetOccupancyGrid2D(width, height, obstacles)
-# # x_init = tuple(np.random.randint(0,width-2,2).tolist())
-# # x_goal = tuple(np.random.randint(0,height-2,2).tolist())
-# # while not (occupancy.is_free(x_init) and occupancy.is_free(x_goal)):
-# #     x_init = tuple(np.random.randint(0,width-2,2).tolist())
-# #     x_goal = tuple(np.random.randint(0,height-2,2).tolist())
+# x_init = tuple(np.random.randint(0,width-2,2).tolist())
+# x_goal = tuple(np.random.randint(0,height-2,2).tolist())
+# while not (occupancy.is_free(x_init) and occupancy.is_free(x_goal)):
+#     x_init = tuple(np.random.randint(0,width-2,2).tolist())
+#     x_goal = tuple(np.random.randint(0,height-2,2).tolist())
 
 # astar = AStar((0, 0), (width, height), x_init, x_goal, occupancy)
 
